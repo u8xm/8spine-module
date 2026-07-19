@@ -5,13 +5,75 @@
   "labels": ["PRO", "CLEAN"],
   "searchTracks": {
     "description": "Search for tracks",
-    "params": ["query", "limit"],
-    "defaultLimit": 10
+    "implementation": "async function(query, limit)",
+    "params": [
+      {
+        "name": "query",
+        "type": "string",
+        "required": true,
+        "description": "Search query for tracks"
+      },
+      {
+        "name": "limit",
+        "type": "number",
+        "required": false,
+        "default": 10,
+        "description": "Maximum number of results"
+      }
+    ],
+    "returns": {
+      "tracks": [
+        {
+          "id": "track_01",
+          "title": "string",
+          "artist": "string",
+          "album": "string",
+          "duration": "number",
+          "albumCover": "string"
+        }
+      ],
+      "total": "number"
+    },
+    "example": {
+      "query": "search term",
+      "limit": 10
+    }
   },
   "getTrackStreamUrl": {
-    "description": "Get track stream URL",
-    "params": ["trackId", "quality"],
-    "defaultQuality": "HIGH",
-    "streamUrl": "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3"
+    "description": "Get track stream URL with quality settings",
+    "implementation": "async function(trackId, quality)",
+    "params": [
+      {
+        "name": "trackId",
+        "type": "string",
+        "required": true,
+        "description": "ID of the track to stream"
+      },
+      {
+        "name": "quality",
+        "type": "string",
+        "required": false,
+        "default": "HIGH",
+        "options": ["LOW", "HIGH", "LOSSLESS"],
+        "description": "Audio quality level"
+      }
+    ],
+    "returns": {
+      "streamUrl": "string",
+      "track": {
+        "id": "string",
+        "audioQuality": "string"
+      }
+    },
+    "streamUrl": "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3",
+    "example": {
+      "trackId": "track_01",
+      "quality": "HIGH"
+    }
+  },
+  "config": {
+    "apiBaseUrl": "https://api.uncleansable.dev/v1",
+    "fallbackAudioUrl": "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3",
+    "timeoutMs": 5000
   }
 }
