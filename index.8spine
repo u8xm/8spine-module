@@ -1,131 +1,33 @@
-const PRO_DEBUG_MODULE = {
-    id: 'com.uncleansable.prointegration',
-    name: '8SPINE Pro Integration Suite',
-    version: '2.4.0',
-    labels: ['LOSSLESS', 'FAST', 'PRO', 'DIAG'],
-
-    config: {
-        apiBaseUrl: 'https://api.uncleansable.dev/v1',
-        fallbackAudioUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3',
-        timeoutMs: 5000
-    },
+const CLEAN_MODULE = {
+    id: "com.uncleansable.cleanmodule",
+    name: "8SPINE Clean Module",
+    version: "2.4.0",
+    labels: ["PRO", "CLEAN"],
 
     searchTracks: async function(query, limit) {
-        const currentLimit = limit || 20;
-
-        try {
-            const mockDatabaseResults = [
-                {
-                    id: "uncl_track_01",
-                    title: query,
-                    artist: "Uncleansable Audio Lab",
-                    album: "8SPINE Reference Standards",
-                    duration: 210,
-                    cover: "https://images.unsplash.com/photo-1614680376593-902f74fa0d41?w=150"
-                },
-                {
-                    id: "uncl_track_02",
-                    title: `${query} (Remix)`,
-                    artist: "Uncleansable Pro",
-                    album: "The Remixes",
-                    duration: 185,
-                    cover: "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=150"
-                },
-                {
-                    id: "uncl_track_03",
-                    title: `${query} (Acoustic)`,
-                    artist: "Acoustic Project",
-                    album: "Unplugged Sessions",
-                    duration: 245,
-                    cover: "https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=150"
-                }
-            ];
-
-            const tracks = mockDatabaseResults
-                .slice(0, currentLimit)
-                .map(item => ({
-                    id: item.id,
-                    title: item.title,
-                    artist: item.artist,
-                    album: item.album,
-                    duration: item.duration,
-                    albumCover: item.cover
-                }));
-
-            return {
-                tracks,
-                total: tracks.length
-            };
-
-        } catch (error) {
-            return {
-                tracks: [],
-                total: 0
-            };
-        }
+        const currentLimit = limit || 10;
+        const tracks = [
+            {
+                id: "track_01",
+                title: query,
+                artist: "Uncleansable Lab",
+                album: "Standard Audio",
+                duration: 200,
+                albumCover: "https://via.placeholder.com/150"
+            }
+        ];
+        return { tracks: tracks, total: tracks.length };
     },
 
     getTrackStreamUrl: async function(trackId, quality) {
-        const selectedQuality = quality || 'HIGH';
-
-        let streamUrl = this.config.fallbackAudioUrl;
-
-        if (selectedQuality === 'LOSSLESS') {
-            streamUrl = 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3';
-        } else if (selectedQuality === 'LOW') {
-            streamUrl = 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3';
-        }
-
         return {
-            streamUrl,
+            streamUrl: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3",
             track: {
                 id: trackId,
-                audioQuality: selectedQuality,
-                bitrate: selectedQuality === 'LOSSLESS'
-                    ? '1411kbps'
-                    : selectedQuality === 'HIGH'
-                        ? '320kbps'
-                        : '96kbps',
-                container: selectedQuality === 'LOSSLESS' ? 'FLAC' : 'MP3'
+                audioQuality: quality || "HIGH"
             }
-        };
-    },
-
-    getAlbum: async function(albumId) {
-        return {
-            album: {
-                id: albumId,
-                name: "8SPINE Reference Standards",
-                artist: "Uncleansable Audio Lab",
-                releaseYear: 2026,
-                genre: "High-Fidelity Diagnostic"
-            },
-            tracks: [
-                {
-                    id: "uncl_track_01",
-                    title: "Reference Stream Alpha",
-                    artist: "Uncleansable Audio Lab",
-                    duration: 210
-                },
-                {
-                    id: "uncl_track_02",
-                    title: "Frequency Sweep Test",
-                    artist: "Uncleansable Audio Lab",
-                    duration: 185
-                }
-            ]
-        };
-    },
-
-    getArtist: async function(artistId) {
-        return {
-            id: artistId,
-            name: "Uncleansable Audio Lab",
-            description: "Profil d'ingénierie sonore et de développement de modules de streaming de haute précision.",
-            verified: true,
-            followers: 42000
         };
     }
 };
 
-return PRO_DEBUG_MODULE;
+return CLEAN_MODULE;
