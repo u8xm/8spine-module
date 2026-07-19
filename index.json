@@ -1,0 +1,17 @@
+{
+  "id": "com.uncleansable.cleanmodule",
+  "name": "8SPINE Clean Module",
+  "version": "2.4.0",
+  "labels": ["PRO", "CLEAN"],
+  "searchTracks": {
+    "description": "Search for tracks",
+    "params": ["query", "limit"],
+    "defaultLimit": 10
+  },
+  "getTrackStreamUrl": {
+    "description": "Get track stream URL",
+    "params": ["trackId", "quality"],
+    "defaultQuality": "HIGH",
+    "streamUrl": "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3"
+  }
+}
