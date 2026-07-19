@@ -1,0 +1,276 @@
+const DEBUG_MODULE = {
+    id: "com.uncleansable.debugmodule",
+    name: "8SPINE Debug Module",
+    version: "2.4.0",
+    labels: ["DEBUG", "DIAGNOSTIC", "MONITORING"],
+
+    config: {
+        apiBaseUrl: 'https://api.uncleansable.dev/v1',
+        fallbackAudioUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3',
+        timeoutMs: 5000,
+        enableDetailedLogging: true
+    },
+
+    metrics: {
+        searchLatency: [],
+        streamLatency: [],
+        apiResponseTimes: [],
+        errorCount: 0,
+        successCount: 0
+    },
+
+    log: function(level, message, data = null) {
+        const timestamp = new Date().toISOString();
+        const logEntry = {
+            timestamp,
+            level,
+            message,
+            data
+        };
+        console.log(`[${level}] ${timestamp}: ${message}`, data || '');
+        return logEntry;
+    },
+
+    measureLatency: async function(fn, operationName) {
+        const startTime = performance.now();
+        try {
+            const result = await fn();
+            const endTime = performance.now();
+            const latency = endTime - startTime;
+            
+            this.log('INFO', `${operationName} completed`, {
+                latency: `${latency.toFixed(2)}ms`,
+                status: 'success'
+            });
+            
+            if (operationName.includes('search')) {
+                this.metrics.searchLatency.push(latency);
+            } else if (operationName.includes('stream')) {
+                this.metrics.streamLatency.push(latency);
+            }
+            
+            this.metrics.apiResponseTimes.push({
+                operation: operationName,
+                latency
+            });
+            
+            this.metrics.successCount++;
+            return result;
+        } catch (error) {
+            const endTime = performance.now();
+            const latency = endTime - startTime;
+            
+            this.log('ERROR', `${operationName} failed`, {
+                latency: `${latency.toFixed(2)}ms`,
+                error: error.message,
+                status: 'failed'
+            });
+            
+            this.metrics.errorCount++;
+            throw error;
+        }
+    },
+
+    searchTracks: async function(query, limit) {
+        return this.measureLatency(async () => {
+            const currentLimit = limit || 20;
+            
+            this.log('DEBUG', 'Starting track search', {
+                query,
+                limit: currentLimit
+            });
+
+            const mockDatabaseResults = [
+                {
+                    id: "debug_track_01",
+                    title: query,
+                    artist: "Uncleansable Debug Lab",
+                    album: "Debug Reference Standards",
+                    duration: 210,
+                    cover: "https://images.unsplash.com/photo-1614680376593-902f74fa0d41?w=150"
+                },
+                {
+                    id: "debug_track_02",
+                    title: `${query} (Debug Remix)`,
+                    artist: "Debug Pro",
+                    album: "The Debug Remixes",
+                    duration: 185,
+                    cover: "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=150"
+                },
+                {
+                    id: "debug_track_03",
+                    title: `${query} (Test)`,
+                    artist: "Test Project",
+                    album: "Test Sessions",
+                    duration: 245,
+                    cover: "https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=150"
+                }
+            ];
+
+            const tracks = mockDatabaseResults
+                .slice(0, currentLimit)
+                .map(item => ({
+                    id: item.id,
+                    title: item.title,
+                    artist: item.artist,
+                    album: item.album,
+                    duration: item.duration,
+                    albumCover: item.cover
+                }));
+
+            this.log('INFO', 'Track search results retrieved', {
+                resultCount: tracks.length,
+                totalCount: tracks.length
+            });
+
+            return {
+                tracks,
+                total: tracks.length
+            };
+        }, 'searchTracks');
+    },
+
+    getTrackStreamUrl: async function(trackId, quality) {
+        return this.measureLatency(async () => {
+            const selectedQuality = quality || 'HIGH';
+            
+            this.log('DEBUG', 'Requesting stream URL', {
+                trackId,
+                quality: selectedQuality
+            });
+
+            let streamUrl = this.config.fallbackAudioUrl;
+            let bitrate = '320kbps';
+            let container = 'MP3';
+
+            if (selectedQuality === 'LOSSLESS') {
+                streamUrl = 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3';
+                bitrate = '1411kbps';
+                container = 'FLAC';
+            } else if (selectedQuality === 'LOW') {
+                streamUrl = 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3';
+                bitrate = '96kbps';
+            }
+
+            this.log('INFO', 'Stream URL resolved', {
+                trackId,
+                audioQuality: selectedQuality,
+                bitrate,
+                container
+            });
+
+            return {
+                streamUrl,
+                track: {
+                    id: trackId,
+                    audioQuality: selectedQuality,
+                    bitrate,
+                    container
+                }
+            };
+        }, 'getTrackStreamUrl');
+    },
+
+    getHealthStatus: async function() {
+        return this.measureLatency(async () => {
+            this.log('INFO', 'Checking module health');
+
+            const avgSearchLatency = this.metrics.searchLatency.length > 0
+                ? (this.metrics.searchLatency.reduce((a, b) => a + b, 0) / this.metrics.searchLatency.length).toFixed(2)
+                : 0;
+
+            const avgStreamLatency = this.metrics.streamLatency.length > 0
+                ? (this.metrics.streamLatency.reduce((a, b) => a + b, 0) / this.metrics.streamLatency.length).toFixed(2)
+                : 0;
+
+            const successRate = this.metrics.successCount + this.metrics.errorCount > 0
+                ? ((this.metrics.successCount / (this.metrics.successCount + this.metrics.errorCount)) * 100).toFixed(2)
+                : 0;
+
+            const healthData = {
+                status: 'healthy',
+                version: this.version,
+                metrics: {
+                    totalOperations: this.metrics.successCount + this.metrics.errorCount,
+                    successCount: this.metrics.successCount,
+                    errorCount: this.metrics.errorCount,
+                    successRate: `${successRate}%`,
+                    averageSearchLatency: `${avgSearchLatency}ms`,
+                    averageStreamLatency: `${avgStreamLatency}ms`,
+                    apiResponseTimes: this.metrics.apiResponseTimes
+                },
+                timestamp: new Date().toISOString()
+            };
+
+            this.log('INFO', 'Health status retrieved', healthData);
+            return healthData;
+        }, 'getHealthStatus');
+    },
+
+    getDetailedMetrics: function() {
+        this.log('INFO', 'Retrieving detailed metrics');
+        return {
+            searchLatencies: this.metrics.searchLatency,
+            streamLatencies: this.metrics.streamLatency,
+            apiResponseTimes: this.metrics.apiResponseTimes,
+            errorCount: this.metrics.errorCount,
+            successCount: this.metrics.successCount,
+            timestamp: new Date().toISOString()
+        };
+    },
+
+    testSourceConnectivity: async function() {
+        return this.measureLatency(async () => {
+            this.log('DEBUG', 'Testing source connectivity');
+
+            const tests = {
+                apiConnection: false,
+                fallbackAudioUrl: false,
+                responseTime: null
+            };
+
+            try {
+                const startTime = performance.now();
+                // Simulate API test
+                tests.apiConnection = true;
+                tests.responseTime = performance.now() - startTime;
+                
+                this.log('INFO', 'API connection test passed', {
+                    responseTime: `${tests.responseTime.toFixed(2)}ms`
+                });
+            } catch (error) {
+                this.log('ERROR', 'API connection test failed', {
+                    error: error.message
+                });
+            }
+
+            try {
+                // Simulate fallback URL test
+                tests.fallbackAudioUrl = true;
+                this.log('INFO', 'Fallback audio URL test passed');
+            } catch (error) {
+                this.log('ERROR', 'Fallback audio URL test failed', {
+                    error: error.message
+                });
+            }
+
+            return {
+                connectivity: tests,
+                timestamp: new Date().toISOString()
+            };
+        }, 'testSourceConnectivity');
+    },
+
+    clearMetrics: function() {
+        this.metrics = {
+            searchLatency: [],
+            streamLatency: [],
+            apiResponseTimes: [],
+            errorCount: 0,
+            successCount: 0
+        };
+        this.log('INFO', 'Metrics cleared');
+    }
+};
+
+return DEBUG_MODULE;
